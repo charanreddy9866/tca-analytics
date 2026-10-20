@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: changelog/001-create-schemas-and-raw-tables.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changelog/002-create-s3-stage.sql
+      relativeToChangelogFile: true

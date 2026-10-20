@@ -1,0 +1,7 @@
+# Copy to liquibase.properties and fill in. Do not commit the real file.
+changeLogFile=changelog-root.yaml
+url=jdbc:snowflake://<account_identifier>.snowflakecomputing.com/?db=TCA&warehouse=TCA_WH&role=TCA_ROLE
+username=<user>
+password=<password>
+parameter.s3_bucket=<your-bucket>
+parameter.storage_integration=<storage_integration_name>

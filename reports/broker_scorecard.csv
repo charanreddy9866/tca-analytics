@@ -1,0 +1,5 @@
+broker,orders,notional_mm,arrival_slippage_bps,vwap_slippage_bps,is_bps,is_cost_usd
+Broker B,361,388.3,0.59,4.1,2.07,84086.0
+Broker A,382,564.9,1.68,3.87,3.34,195918.0
+Broker C,359,400.9,5.0,5.3,6.23,265229.0
+Broker D,398,483.0,10.12,7.05,11.18,556578.0

@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+*.duckdb
+liquibase/liquibase.properties
+liquibase/databasechangelog.csv
+api/TcaApi/bin/
+api/TcaApi/obj/
+api/TcaApi/appsettings.Development.json
