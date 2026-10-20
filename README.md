@@ -4,6 +4,8 @@ A data pipeline that measures **trade execution quality** for US equity orders. 
 
 **Stack:** Snowflake SQL · Apache Airflow · Liquibase · C# / ASP.NET Core · Python · Amazon S3 · DuckDB (local runs)
 
+**Live results page:** https://charanreddy9866.github.io/tca-analytics/dashboard/ (broker scorecard, daily costs, strategy and size breakdowns, trade lookup and pipeline health). Built from the pipeline output by `scripts/build_dashboard.py`.
+
 > The dataset is synthetic (`scripts/generate_data.py`) so the project can be shared publicly: one month of one-minute market data for 14 symbols, 1,500 parent orders and ~15,900 fills, with a few bad records injected for the validation checks.
 
 ## Architecture
@@ -70,6 +72,7 @@ pip install duckdb pandas pytest
 python scripts/generate_data.py          # data/*.csv
 cd scripts && python run_local.py        # ingest -> validate -> transform -> reconcile -> report
 cd .. && python -m pytest tests          # TCA math and validation tests
+cd scripts && python build_dashboard.py  # dashboard/index.html
 ```
 
 **Airflow (local mode):**

@@ -1,0 +1,250 @@
+<title>TCA Execution Scorecard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: trading-desk scorecard. Summary strip, broker ranking, then drill-down (daily, strategy, size, trade lookup), pipeline health last. */
+:root {
+  --bg: #f2f5f6; --panel: #ffffff; --ink: #13202a; --muted: #5a6b76; --rule: #dbe2e6; --grid: #e6ecef;
+  --accent: #0e6e66; --accent-soft: #d5ebe8; --accent-2: #b4590f;
+  --good: #1f7a3d; --good-bg: #e2f2e7; --bad: #b42318; --bad-bg: #fbe4e2;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1a20; --panel: #16252d; --ink: #e6eef2; --muted: #94a7b1; --rule: #26404c; --grid: #21343d;
+  --accent: #4cc2b6; --accent-soft: #173a38; --accent-2: #f0a35e;
+  --good: #6fd08f; --good-bg: #15301f; --bad: #ff8a80; --bad-bg: #3a1a18; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1a20; --panel: #16252d; --ink: #e6eef2; --muted: #94a7b1; --rule: #26404c; --grid: #21343d;
+  --accent: #4cc2b6; --accent-soft: #173a38; --accent-2: #f0a35e;
+  --good: #6fd08f; --good-bg: #15301f; --bad: #ff8a80; --bad-bg: #3a1a18; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 4vw, 36px); line-height: 1.1; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 72ch; margin: 0; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.flow span.step { border: 1px solid var(--rule); background: var(--panel); border-radius: 6px; padding: 2px 8px; color: var(--ink); }
+.flow span.gate { border-color: var(--accent-2); color: var(--accent-2); }
+
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; }
+.kpi { padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.kpi + .kpi { border-left: 1px solid var(--rule); }
+.kpi .label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.kpi .value { font-family: var(--display); font-weight: 700; font-size: 24px; font-variant-numeric: tabular-nums; }
+.kpi .note { font-size: 12px; color: var(--muted); }
+
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; display: grid; gap: 12px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 17px; margin: 0; }
+.sub { color: var(--muted); font-size: 12.5px; margin: 0; }
+.src { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.chart { position: relative; height: 260px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td.mono { font-family: var(--mono); font-size: 13px; }
+.rankbar { display: inline-block; height: 8px; border-radius: 4px; background: var(--accent); vertical-align: middle; margin-right: 8px; }
+.cost-pos { color: var(--bad); } .cost-neg { color: var(--good); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.controls label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+input, select { font: inherit; font-size: 13px; padding: 6px 9px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); color: var(--ink); min-width: 0; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.detail { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 16px; }
+.detail div { display: grid; gap: 2px; min-width: 0; }
+.detail span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.detail b { font-family: var(--mono); font-weight: 500; }
+
+.checks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.check { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
+.check .top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; letter-spacing: .04em; }
+.pill.ok { background: var(--good-bg); color: var(--good); }
+.pill.block { background: var(--bad-bg); color: var(--bad); }
+.recon { font-family: var(--mono); font-size: 13px; }
+footer { color: var(--muted); font-size: 12px; }
+
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi + .kpi { border-left: 0; } .kpi { border-bottom: 1px solid var(--rule); }
+  .grid2, .checks { grid-template-columns: minmax(0, 1fr); }
+  .detail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Transaction cost analysis · US equities · Sep 2025</div>
+    <h1>Execution Quality Scorecard</h1>
+    <p class="lede">How well were trades executed? Every order is compared with its arrival price and the market VWAP while it filled. Implementation shortfall adds commissions and the cost of shares that never filled. Positive numbers are a cost to the client.</p>
+    <div class="flow">Airflow DAG:
+      <span class="step">ingest</span>›<span class="step gate">validate</span>›<span class="step">transform</span>›<span class="step gate">reconcile</span>›<span class="step">report</span>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Summary metrics"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Broker scorecard</h2><p class="sub">Ranked by implementation shortfall. Basis points are weighted by notional traded.</p></div>
+      <span class="src">GET /api/reports/brokers</span>
+    </div>
+    <div class="table-wrap"><table id="brokers"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Daily implementation shortfall by broker</h2><p class="sub">Single days are noisy because each broker trades only a few orders per day; compare brokers on the full-month scorecard above.</p></div>
+      <span class="src">analytics.daily_tca_summary</span>
+    </div>
+    <div class="chart"><canvas id="daily" aria-label="Daily implementation shortfall by broker"></canvas></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head"><h2>By execution strategy</h2><span class="src">bps</span></div>
+      <div class="chart"><canvas id="strategy" aria-label="Cost by strategy"></canvas></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>By order size</h2><span class="src">shares per order · bps</span></div>
+      <div class="chart"><canvas id="size" aria-label="Cost by order size"></canvas></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Trade lookup</h2><p class="sub">Look up any order, or list the most expensive trades for a broker.</p></div>
+      <span class="src">GET /api/trades/{orderId}/tca</span>
+    </div>
+    <div class="controls">
+      <label for="oid">Order ID (1–1500)<input id="oid" type="number" min="1" max="1500" value="1"></label>
+      <label for="fbroker">Broker<select id="fbroker"></select></label>
+      <label for="fside">Side<select id="fside"><option value="">Buy and sell</option><option>BUY</option><option>SELL</option></select></label>
+    </div>
+    <div class="detail" id="detail"></div>
+    <div class="table-wrap"><table id="trades"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Pipeline health</h2><p class="sub">Validation runs before any transformation. A check above its threshold stops the run; small counts of bad rows are filtered out.</p></div>
+      <span class="src">sql/snowflake/02_validate.sql</span>
+    </div>
+    <div class="checks" id="checks"></div>
+    <div class="recon" id="recon"></div>
+  </section>
+
+  <footer>Synthetic data generated for demonstration. Stack: Snowflake SQL · Apache Airflow · Liquibase · C# ASP.NET Core · Python. Code: github.com/charanreddy9866/tca-analytics</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const D = __DATA__;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const money = (v, d = 0) => (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
+const compact = v => Math.abs(v) >= 1e9 ? '$' + (v / 1e9).toFixed(2) + 'B' : Math.abs(v) >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : money(v);
+const bps = v => (v > 0 ? '' : '') + Number(v).toFixed(1) + ' bps';
+const costCls = v => v > 0 ? 'cost-pos' : 'cost-neg';
+
+const k = D.kpis;
+document.getElementById('kpis').innerHTML = [
+  ['Orders', k.orders.toLocaleString('en-US'), '14 symbols · 21 days'],
+  ['Traded', compact(k.notional), 'Executed notional'],
+  ['Impl. shortfall', bps(k.is_bps), compact(k.is_usd) + ' total cost'],
+  ['Arrival slippage', bps(k.arrival_bps), 'vs. price at order arrival'],
+  ['VWAP slippage', bps(k.vwap_bps), 'vs. market VWAP while filling'],
+  ['Fill rate', k.fill_rate + '%', 'Average per order'],
+].map(([l, v, n]) => `<div class="kpi"><span class="label">${l}</span><span class="value">${v}</span><span class="note">${n}</span></div>`).join('');
+
+const maxIs = Math.max(...D.brokers.map(b => b.is_bps));
+document.getElementById('brokers').innerHTML =
+  '<thead><tr><th>Broker</th><th>Orders</th><th>Notional</th><th>Arrival</th><th>VWAP</th><th>Impl. shortfall</th><th>Cost</th></tr></thead><tbody>' +
+  D.brokers.map(b => `<tr><td>${b.broker}</td><td>${b.orders}</td><td>$${b.notional_mm}M</td><td>${bps(b.arrival_bps)}</td><td>${bps(b.vwap_bps)}</td>
+    <td><span class="rankbar" style="width:${Math.max(4, b.is_bps / maxIs * 90)}px"></span><b>${bps(b.is_bps)}</b></td><td>${money(b.is_usd)}</td></tr>`).join('') + '</tbody>';
+
+const checkNames = { duplicate_exec_id: 'Duplicate fill IDs', non_positive_exec_price: 'Zero or negative price', non_positive_exec_qty: 'Zero or negative quantity',
+  orphan_executions: 'Fills for unknown orders', exec_before_arrival: 'Fills before order arrival', overfilled_orders: 'Over-filled orders' };
+document.getElementById('checks').innerHTML = Object.entries(D.checks).map(([key, n]) => {
+  const lim = D.thresholds[key] ?? 0, blocked = n > lim;
+  return `<div class="check"><div class="top"><span>${checkNames[key] || key}</span><span class="pill ${blocked ? 'block' : 'ok'}">${blocked ? 'BLOCKED' : 'PASS'}</span></div>
+    <span class="sub">${n} rows found · stops above ${lim}</span></div>`;
+}).join('');
+document.getElementById('recon').textContent =
+  `Reconciliation: ${D.recon.clean_shares.toLocaleString('en-US')} clean executed shares in → ${D.recon.modeled_shares.toLocaleString('en-US')} shares in trade_tca. ${D.recon.clean_shares === D.recon.modeled_shares ? 'Match.' : 'Mismatch.'}`;
+
+// Trade lookup
+const fb = document.getElementById('fbroker');
+fb.innerHTML = '<option value="">All brokers</option>' + D.brokers.map(b => `<option>${b.broker}</option>`).join('');
+const byId = new Map(D.trades.map(t => [t.order_id, t]));
+function showDetail() {
+  const t = byId.get(Number(document.getElementById('oid').value));
+  const el = document.getElementById('detail');
+  if (!t) { el.innerHTML = '<div><span>Not found</span><b>Enter an order ID from 1 to 1500.</b></div>'; return; }
+  const f = [['Order', `#${t.order_id} · ${t.side} ${t.symbol}`], ['Date · broker', `${t.trade_date} · ${t.broker}`], ['Strategy', t.strategy],
+    ['Filled', `${t.filled_qty.toLocaleString('en-US')} / ${t.order_qty.toLocaleString('en-US')}`],
+    ['Arrival price', '$' + t.arrival_price.toFixed(4)], ['Avg execution', '$' + t.avg_exec_price.toFixed(4)], ['Interval VWAP', '$' + t.interval_vwap.toFixed(4)],
+    ['Shortfall', `<i class="${costCls(t.is_usd)}" style="font-style:normal">${money(t.is_usd, 2)} · ${bps(t.is_bps)}</i>`]];
+  el.innerHTML = f.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
+}
+function showTrades() {
+  const b = fb.value, s = document.getElementById('fside').value;
+  const rows = D.trades.filter(t => (!b || t.broker === b) && (!s || t.side === s)).sort((x, y) => y.is_usd - x.is_usd).slice(0, 10);
+  document.getElementById('trades').innerHTML =
+    '<thead><tr><th>Most expensive orders</th><th>Date</th><th>Broker</th><th>Strategy</th><th>Shares</th><th>Arrival</th><th>VWAP</th><th>Shortfall</th></tr></thead><tbody>' +
+    rows.map(t => `<tr><td class="mono">#${t.order_id} ${t.side} ${t.symbol}</td><td>${t.trade_date}</td><td>${t.broker}</td><td>${t.strategy}</td>
+      <td>${t.order_qty.toLocaleString('en-US')}</td><td>${bps(t.arrival_bps)}</td><td>${bps(t.vwap_bps)}</td><td class="${costCls(t.is_usd)}">${money(t.is_usd)}</td></tr>`).join('') + '</tbody>';
+}
+['oid'].forEach(id => document.getElementById(id).addEventListener('input', showDetail));
+['fbroker', 'fside'].forEach(id => document.getElementById(id).addEventListener('change', showTrades));
+showDetail(); showTrades();
+
+// Charts
+let charts = [];
+function base() {
+  const ink = css('--muted'), grid = css('--grid');
+  return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+    plugins: { legend: { labels: { color: ink, boxWidth: 12 } } },
+    scales: { x: { ticks: { color: ink, font: { size: 11 } }, grid: { color: grid } },
+              y: { ticks: { color: ink, font: { size: 11 }, callback: v => v + ' bps' }, grid: { color: grid } } } };
+}
+function draw() {
+  charts.forEach(c => c.destroy()); charts = [];
+  const accent = css('--accent'), accent2 = css('--accent-2'), muted = css('--muted'), ink = css('--ink');
+  const palette = [accent, ink, accent2, muted];
+  const days = [...new Set(D.daily.map(r => r.trade_date))];
+  const dOpts = base();
+  dOpts.plugins.tooltip = { callbacks: { label: c => `${c.dataset.label}: ${c.raw.toFixed(1)} bps` } };
+  charts.push(new Chart(document.getElementById('daily'), { type: 'line',
+    data: { labels: days.map(d => d.slice(5)), datasets: D.brokers.map((b, i) => ({ label: b.broker, borderColor: palette[i], backgroundColor: palette[i],
+      pointRadius: 2, tension: .2, borderWidth: 2,
+      data: days.map(d => (D.daily.find(r => r.trade_date === d && r.broker === b.broker) || {}).is_bps ?? null) })) },
+    options: dOpts }));
+  const sOpts = base(); sOpts.plugins.legend.display = false;
+  charts.push(new Chart(document.getElementById('strategy'), { type: 'bar',
+    data: { labels: D.strategies.map(s => s.strategy), datasets: [{ data: D.strategies.map(s => s.is_bps), backgroundColor: accent2, borderRadius: 3 }] }, options: sOpts }));
+  const zOpts = base(); zOpts.plugins.legend.display = false;
+  zOpts.plugins.tooltip = { callbacks: { afterLabel: c => D.sizes[c.dataIndex].orders + ' orders' } };
+  charts.push(new Chart(document.getElementById('size'), { type: 'bar',
+    data: { labels: D.sizes.map(s => s.bucket), datasets: [{ data: D.sizes.map(s => s.is_bps), backgroundColor: accent, borderRadius: 3 }] }, options: zOpts }));
+}
+if (window.Chart) {
+  Chart.defaults.font.family = 'IBM Plex Sans';
+  draw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
+</script>
